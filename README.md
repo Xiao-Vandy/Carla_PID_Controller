@@ -5,7 +5,7 @@ Xiao Li
 Working Environment
 Python 3.7, Ubuntu 22.04LTS with RTX4090.
 
-1. Install CARLA
+1 Install CARLA
 #Carla is the framework I have used to simulate the autonomous vehicle.
 #Here is the installation script, make it executable.
 chmod +x setup_carla.sh
