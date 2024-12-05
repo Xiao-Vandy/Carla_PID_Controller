@@ -32,7 +32,7 @@ def plot_path(waypoints, ids, title):
     plt.xlabel('x')
     plt.ylabel('y')
     plt.title(f'Path for {title}')
-    plt.savefig(f'{title}_path.png')
+    plt.savefig(f'./output{title}_path.png')
     print(f'{title}_path.png saved')
     plt.show()
 
