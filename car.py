@@ -140,7 +140,7 @@ def render_text(display, text, x, y, font, color=(255, 255, 255)):
     display.blit(text_surface, (x, y))
 
 def main():
-    map_name = 'Town02'
+    map_name = 'Town01'
     client = carla.Client('localhost', 2000)
     client.set_timeout(10.0)
     
@@ -189,9 +189,46 @@ def main():
     results = {}
 
     # Define the list of target speeds
-    target_speeds = [15, 20, 25, 30]
+    target_speed = 30
 
-    for target_speed in target_speeds:
+    # Define a list of PID configurations
+    pid_configs = [
+
+       {
+        'args_lateral_dict': {
+            'K_P': 1.95,
+            'K_D': 0.2,
+            'K_I': 0.07,
+            'dt': 1.0 / 10.0,
+        },
+        'args_longitudinal_dict': {
+            'K_P': 1.0,
+            'K_D': 0.0,
+            'K_I': 0.75,
+            'dt': 1.0 / 10.0,
+        },
+        
+    },
+    {
+        'args_lateral_dict': {
+            'K_P': 1.8,
+            'K_D': 0.3,
+            'K_I': 0.05,
+            'dt': 1.0 / 10.0,
+        },
+        'args_longitudinal_dict': {
+            'K_P': 1.0,
+            'K_D': 0.0,
+            'K_I': 0.75,
+            'dt': 1.0 / 10.0,
+        },
+    },
+]
+
+    # for target_speed in target_speeds:
+    for config_id, pid_config in enumerate(pid_configs):
+        args_lateral_dict = pid_config['args_lateral_dict']
+        args_longitudinal_dict = pid_config['args_longitudinal_dict']
         # Re-initialize data lists for each trial
         throttle_data = []
         brake_data = []
@@ -217,21 +254,7 @@ def main():
         vehicle = world.try_spawn_actor(vehicle_bp, spawn_point)
         if vehicle is None:
             raise RuntimeError("Spawn failed due to collision at spawn position")
-
-        args_lateral_dict = {
-            # At higher speeds, the vehicle needs more aggressive corrections to stay on track. 
-            'K_P': 1.95,
-            'K_D': 0.2,
-            'K_I': 0.07,
-            'dt': 1.0 / 10.0,
-        }
-        args_longitudinal_dict = {
-            'K_P': 1.0,
-            'K_D': 0.0,
-            'K_I': 0.75,
-            'dt': 1.0 / 10.0,
-        }
-        # Initialize PID controllers
+        
         pid_controller = VehiclePIDController(vehicle, args_lateral_dict, args_longitudinal_dict)
 
         next_waypoint = safe_waypoints[0]
@@ -357,12 +380,12 @@ def main():
                     next_waypoint = safe_waypoints[i % len(safe_waypoints)]
        
             # Store results for this speed
-            results[target_speed] = {
+            results[f"Config {config_id + 1}"] = {
                 'throttle': throttle_data,
-            'brake': brake_data,
-            'lateral_error': lateral_error_data,
-            'route_completion': route_completion_data
-        }
+                'brake': brake_data,
+                'lateral_error': lateral_error_data,
+                'route_completion': route_completion_data,
+            }
 
         finally:
             camera.destroy()
@@ -371,43 +394,49 @@ def main():
     
     print(123)
     # Plot comparison for all speeds after the simulations
-    fig, axes = plt.subplots(4, 1, figsize=(12, 20), sharex=True)
+    fig, axes = plt.subplots(2, 1, figsize=(12, 20), sharex=True)
+
+    # Plot comparison for all configurations after the simulations
+    # fig, axes = plt.subplots(4, 1, figsize=(12, 20), sharex=True)
 
     # Create comparison plots
-    for target_speed, result in results.items():
+    # for config_name, result in results.items():
+    for config_name, result in results.items():
         time_steps = np.arange(len(result['throttle']))  # Assuming data was recorded per simulation step
 
-        # Throttle Comparison
-        axes[0].plot(time_steps, result['throttle'], label=f'Speed {target_speed} km/h')
-        axes[0].set_ylabel("Throttle")
-        axes[0].legend()
-        axes[0].set_title("Throttle Comparison for Different Speeds")
+        # # Throttle Comparison
+        # axes[0].plot(time_steps, result['throttle'], label=target_speed)
+        # axes[0].set_ylabel("Throttle")
+        # axes[0].legend()
+        # axes[0].set_title("Throttle Comparison for Different Configurations")
 
-        # Brake Comparison
-        axes[1].plot(time_steps, result['brake'], label=f'Speed {target_speed} km/h')
-        axes[1].set_ylabel("Brake")
-        axes[1].legend()
-        axes[1].set_title("Brake Comparison for Different Speeds")
+        # # Brake Comparison
+        # axes[1].plot(time_steps, result['brake'], label=target_speed)
+        # axes[1].set_ylabel("Brake")
+        # axes[1].legend()
+        # axes[1].set_title("Brake Comparison for Different Configurations")
 
         # Lateral Error Comparison
-        axes[2].plot(time_steps, result['lateral_error'], label=f'Speed {target_speed} km/h')
-        axes[2].set_ylabel("Lateral Error")
-        axes[2].legend()
-        axes[2].set_title("Lateral Error Comparison for Different Speeds")
+        axes[0].plot(time_steps, result['lateral_error'], label=config_name)
+        axes[0].set_ylabel("Lateral Error")
+        axes[0].legend()
+        axes[0].set_title("Lateral Error Comparison for Different Configurations")
 
         # Route Completion Comparison
-        axes[3].plot(time_steps, result['route_completion'], label=f'Speed {target_speed} km/h')
-        axes[3].set_ylabel("Route Completion (%)")
-        axes[3].legend()
-        axes[3].set_title("Route Completion for Different Speeds")
+        axes[1].plot(time_steps, result['route_completion'], label=config_name)
+        axes[1].set_ylabel("Route Completion (%)")
+        axes[1].legend()
+        axes[1].set_title("Route Completion for Different Configurations")
 
-        # Label the x-axis
-        axes[3].set_xlabel("Time Step")
+    # Label the x-axis
+    axes[1].set_xlabel("Time Step")
 
-        # Tight layout for better appearance
-        plt.tight_layout()
+    # Tight layout for better appearance
+    plt.tight_layout()
 
-        plt.savefig(f"{map_name}_comparison_plot_speed={target_speed}.png")
+    plt.savefig(f"./output/{map_name}_comparison_plot_configs_target_speed={target_speed}.png")
+    # plt.savefig(f"./output/{map_name}_target_speed={target_speed}.png")
+
 
 
 if __name__ == "__main__":
