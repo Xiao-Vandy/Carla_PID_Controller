@@ -1,6 +1,7 @@
 Hi this is a readme file for how to run this program.
 This is my final project for CS6376 Hybrid/Embedded System, Vanderbilt University, Prof.Abhishek Dubey
-Xiao Li
+
+Designer: Xiao Li
 
 Working Environment
 Python 3.7, Ubuntu 22.04LTS with RTX4090.
